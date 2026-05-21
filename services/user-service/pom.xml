@@ -73,6 +73,11 @@
             <version>${mapstruct.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+
         <!-- OpenAPI spec — Scalar czyta JSON z /v3/api-docs -->
         <dependency>
             <groupId>org.springdoc</groupId>
