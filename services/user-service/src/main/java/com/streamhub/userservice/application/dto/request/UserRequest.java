@@ -1,6 +1,6 @@
 package com.streamhub.userservice.application.dto.request;
 
-import com.streamhub.userservice.application.validator.ValidPassword;
+import com.streamhub.common.validation.ValidPassword;
 import com.streamhub.userservice.domain.model.UserType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

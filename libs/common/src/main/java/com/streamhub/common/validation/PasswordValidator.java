@@ -1,4 +1,4 @@
-package com.streamhub.userservice.application.validator;
+package com.streamhub.common.validation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
@@ -20,7 +20,6 @@ public class PasswordValidator implements ConstraintValidator<ValidPassword, Str
     public boolean isValid(String password, ConstraintValidatorContext context) {
         if (password == null) return false;
 
-        // wyłączamy domyślny komunikat, budujemy własny
         context.disableDefaultConstraintViolation();
 
         if (password.length() < MIN_LENGTH) {
