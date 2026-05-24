@@ -9,7 +9,6 @@ import com.streamhub.userservice.domain.model.User;
 import com.streamhub.userservice.domain.repository.UserRepository;
 import com.streamhub.userservice.domain.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +21,6 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -32,7 +30,6 @@ public class UserServiceImpl implements UserService {
         }
 
         User entity = userMapper.toEntity(request);
-        entity.setPassword(passwordEncoder.encode(request.password()));
         User savedUser = userRepository.save(entity);
 
         return userMapper.toResponse(savedUser);
