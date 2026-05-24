@@ -7,8 +7,11 @@ import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -26,11 +29,14 @@ public class MinioService {
     @Value("${minio.bucket.thumbnails}")
     private String thumbnailsBucket;
 
-    public String uploadVideo(String movieId, MultipartFile file) {
-        return upload(moviesBucket, movieId + "/" + file.getOriginalFilename(), file);
+    @Async("uploadExecutor")
+    public CompletableFuture<String> uploadVideo(String movieId, MultipartFile file) {
+        return CompletableFuture.completedFuture(upload(moviesBucket, movieId + "/" + file.getOriginalFilename(), file));
     }
-    public String uploadThumbnail(String movieId, MultipartFile file) {
-        return upload(thumbnailsBucket, movieId + "/" + file.getOriginalFilename(), file);
+
+    @Async("uploadExecutor")
+    public CompletableFuture<String> uploadThumbnail(String movieId, MultipartFile file) {
+        return CompletableFuture.completedFuture(upload(thumbnailsBucket, movieId + "/" + file.getOriginalFilename(), file));
     }
 
     private String upload(String bucket, String objectName, MultipartFile file) {

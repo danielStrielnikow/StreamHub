@@ -80,7 +80,7 @@ public class MovieServiceImpl implements MovieService {
     @CacheEvict(value = "movies", allEntries = true)
     public MovieResponse uploadVideo(String id, MultipartFile file) {
         Movie movie = findById(id);
-        String url = minioService.uploadVideo(id, file);
+        String url = minioService.uploadVideo(id, file).join();
         movie.setVideoUrl(url);
         return movieMapper.toResponse(movieRepository.save(movie));
     }
@@ -89,7 +89,7 @@ public class MovieServiceImpl implements MovieService {
     @CacheEvict(value = "movies", allEntries = true)
     public MovieResponse uploadThumbnail(String id, MultipartFile file) {
         Movie movie = findById(id);
-        String url = minioService.uploadThumbnail(id, file);
+        String url = minioService.uploadThumbnail(id, file).join();
         movie.setThumbnailUrl(url);
         return movieMapper.toResponse(movieRepository.save(movie));
     }
