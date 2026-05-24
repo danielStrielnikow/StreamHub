@@ -1,6 +1,8 @@
 package com.streamhub.movieservice.model;
 
 import com.streamhub.common.domain.BaseDocument;
+import com.streamhub.movieservice.model.enums.Genre;
+import com.streamhub.movieservice.model.enums.VideoStatus;
 import lombok.*;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -23,4 +25,6 @@ public class Movie extends BaseDocument {
     private String videoUrl;
     private String thumbnailUrl;
     private Double rating;
+    private String videoKey;
+    private VideoStatus videoStatus;
 }

@@ -1,6 +1,6 @@
 package com.streamhub.movieservice.repository;
 
-import com.streamhub.movieservice.model.Genre;
+import com.streamhub.movieservice.model.enums.Genre;
 import com.streamhub.movieservice.model.Movie;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;

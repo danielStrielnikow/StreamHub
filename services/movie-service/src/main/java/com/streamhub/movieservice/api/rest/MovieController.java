@@ -3,13 +3,14 @@ package com.streamhub.movieservice.api.rest;
 import com.streamhub.movieservice.application.dto.request.MovieRequest;
 import com.streamhub.movieservice.application.dto.response.MovieResponse;
 import com.streamhub.movieservice.domain.service.MovieService;
-import com.streamhub.movieservice.model.Genre;
+import com.streamhub.movieservice.model.enums.Genre;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
 
@@ -24,6 +25,14 @@ public class MovieController {
     public ResponseEntity<MovieResponse> create(@Valid @RequestBody MovieRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(movieService.createMovie(request));
     }
+
+    @GetMapping("/{id}/stream")
+    public ResponseEntity<StreamingResponseBody> stream(
+            @PathVariable String id,
+            @RequestHeader(value = "Range", required = false) String range) {
+        return movieService.streamVideo(id, range);
+    }
+    
 
     @GetMapping("/{id}")
     public ResponseEntity<MovieResponse> getById(@PathVariable String id) {
@@ -58,7 +67,7 @@ public class MovieController {
 
     @PostMapping("/{id}/video")
     public ResponseEntity<MovieResponse> uploadVideo(@PathVariable String id, @RequestParam MultipartFile file) {
-        return ResponseEntity.ok(movieService.uploadVideo(id, file));
+        return ResponseEntity.accepted().body(movieService.uploadVideo(id, file));
     }
 
     @PostMapping("/{id}/thumbnail")

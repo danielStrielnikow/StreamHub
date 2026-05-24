@@ -1,6 +1,6 @@
 package com.streamhub.movieservice.application.dto.response;
 
-import com.streamhub.movieservice.model.Genre;
+import com.streamhub.movieservice.model.enums.Genre;
 
 import java.time.LocalDateTime;
 import java.util.List;

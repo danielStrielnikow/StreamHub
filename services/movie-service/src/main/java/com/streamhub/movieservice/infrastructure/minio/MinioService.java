@@ -1,16 +1,13 @@
 package com.streamhub.movieservice.infrastructure.minio;
 
-import io.minio.BucketExistsArgs;
-import io.minio.MakeBucketArgs;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
+import io.minio.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -29,28 +26,68 @@ public class MinioService {
     @Value("${minio.bucket.thumbnails}")
     private String thumbnailsBucket;
 
+    public record UploadResult(String url, String objectKey) {}
+
     @Async("uploadExecutor")
-    public CompletableFuture<String> uploadVideo(String movieId, MultipartFile file) {
-        return CompletableFuture.completedFuture(upload(moviesBucket, movieId + "/" + file.getOriginalFilename(), file));
+    public CompletableFuture<UploadResult> uploadVideo(String movieId, byte[] bytes, String contentType, String filename) {
+        try {
+            String objectKey = movieId + "/" + filename;
+            String url = upload(moviesBucket, objectKey, bytes, contentType);
+            return CompletableFuture.completedFuture(new UploadResult(url, objectKey));
+        } catch (Exception e) {
+            throw new RuntimeException("File upload failed", e);
+        }
     }
 
     @Async("uploadExecutor")
-    public CompletableFuture<String> uploadThumbnail(String movieId, MultipartFile file) {
-        return CompletableFuture.completedFuture(upload(thumbnailsBucket, movieId + "/" + file.getOriginalFilename(), file));
+    public CompletableFuture<UploadResult> uploadThumbnail(String movieId, byte[] bytes, String contentType, String filename) {
+        try {
+            String objectKey = movieId + "/" + filename;
+            String url = upload(thumbnailsBucket, objectKey, bytes, contentType);
+            return CompletableFuture.completedFuture(new UploadResult(url, objectKey));
+        } catch (Exception e) {
+            throw new RuntimeException("File upload failed", e);
+        }
     }
 
-    private String upload(String bucket, String objectName, MultipartFile file) {
+    public InputStream getVideoStream(String objectKey, long offset, long length) {
+        try {
+            return minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(moviesBucket)
+                    .object(objectKey)
+                    .offset(offset)
+                    .length(length)
+                    .build());
+        } catch (Exception e) {
+            log.error("Failed to get video stream: {}", e.getMessage());
+            throw new RuntimeException("Failed to stream video", e);
+        }
+    }
+
+    public long getVideoSize(String objectKey) {
+        try {
+            return minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(moviesBucket)
+                    .object(objectKey)
+                    .build()).size();
+        } catch (Exception e) {
+            log.error("Failed to get video size: {}", e.getMessage());
+            throw new RuntimeException("Failed to get video size", e);
+        }
+    }
+
+    private String upload(String bucket, String objectName, byte[] bytes, String contentType) {
         try {
             ensureBucketExists(bucket);
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucket)
                     .object(objectName)
-                    .stream(file.getInputStream(), file.getSize(), -1)
-                    .contentType(file.getContentType())
+                    .stream(new java.io.ByteArrayInputStream(bytes), bytes.length, -1)
+                    .contentType(contentType)
                     .build());
             return minioUrl + "/" + bucket + "/" + objectName;
         } catch (Exception e) {
-            log.error("Failed to upload file to MinIO: {}", e.getMessage());
+            log.error("Failed to upload file to MinIO:", e);
             throw new RuntimeException("File upload failed", e);
         }
     }

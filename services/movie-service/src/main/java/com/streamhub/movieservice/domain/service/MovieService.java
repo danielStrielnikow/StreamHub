@@ -2,8 +2,10 @@ package com.streamhub.movieservice.domain.service;
 
 import com.streamhub.movieservice.application.dto.request.MovieRequest;
 import com.streamhub.movieservice.application.dto.response.MovieResponse;
-import com.streamhub.movieservice.model.Genre;
+import com.streamhub.movieservice.model.enums.Genre;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
 
@@ -17,4 +19,5 @@ public interface MovieService {
     void deleteMovie(String id);
     MovieResponse uploadVideo(String id, MultipartFile file);
     MovieResponse uploadThumbnail(String id, MultipartFile file);
+    ResponseEntity<StreamingResponseBody> streamVideo(String id, String rangeHeader);
 }

@@ -1,6 +1,7 @@
 package com.streamhub.authservice.infrastructure.keylock;
 
 import com.streamhub.authservice.api.exception.ConflictException;
+import com.streamhub.authservice.api.exception.UnauthorizedException;
 import com.streamhub.authservice.dto.reponse.TokenResponse;
 import com.streamhub.authservice.dto.request.RegisterRequest;
 import jakarta.ws.rs.core.Response;
@@ -15,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
@@ -90,28 +92,35 @@ public class KeycloakService {
         form.add("username", email);
         form.add("password", password);
 
-        return restClient.post()
-                .uri(keycloakUrl + "/realms/" + realm + "/protocol/openid-connect/token")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(form)
-                .retrieve()
-                .body(TokenResponse.class);
+        try {
+            return restClient.post()
+                    .uri(keycloakUrl + "/realms/" + realm + "/protocol/openid-connect/token")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(form)
+                    .retrieve()
+                    .body(TokenResponse.class);
+        } catch (HttpClientErrorException e) {
+            throw new UnauthorizedException("Invalid email or password");
+        }
     }
 
     public TokenResponse refreshToken(String refreshToken) {
-
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "refresh_token");
         form.add("client_id", clientId);
         form.add("client_secret", clientSecret);
         form.add("refresh_token", refreshToken);
 
-        return restClient.post()
-                .uri(keycloakUrl + "/realms/" + realm + "/protocol/openid-connect/token")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(form)
-                .retrieve()
-                .body(TokenResponse.class);
+        try {
+            return restClient.post()
+                    .uri(keycloakUrl + "/realms/" + realm + "/protocol/openid-connect/token")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(form)
+                    .retrieve()
+                    .body(TokenResponse.class);
+        } catch (HttpClientErrorException e) {
+            throw new UnauthorizedException("Refresh token expired or invalid — please log in again");
+        }
     }
     
 }

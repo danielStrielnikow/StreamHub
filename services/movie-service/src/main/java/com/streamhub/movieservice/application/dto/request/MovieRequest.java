@@ -1,6 +1,6 @@
 package com.streamhub.movieservice.application.dto.request;
 
-import com.streamhub.movieservice.model.Genre;
+import com.streamhub.movieservice.model.enums.Genre;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
