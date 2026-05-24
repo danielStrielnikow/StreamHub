@@ -1,6 +1,6 @@
 package com.streamhub.userservice.domain.service.impl;
 
-import com.streamhub.userservice.api.exception.ConflictException;
+import com.streamhub.common.event.UserRegisteredEvent;
 import com.streamhub.userservice.api.exception.ResourceNotFoundException;
 import com.streamhub.userservice.application.dto.request.UserRequest;
 import com.streamhub.userservice.application.dto.response.UserResponse;
@@ -9,12 +9,14 @@ import com.streamhub.userservice.domain.model.User;
 import com.streamhub.userservice.domain.repository.UserRepository;
 import com.streamhub.userservice.domain.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -24,15 +26,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse createUser(UserRequest request) {
-        if (userRepository.findUserByEmail(request.email()).isPresent()) {
-            throw new ConflictException("Email already in use");
+    public void createFromEvent(UserRegisteredEvent event) {
+        if (userRepository.existsByKeycloakId(event.userId())) {
+            log.warn("User {} already exists, skipping", event.userId());
+            return;
         }
-
-        User entity = userMapper.toEntity(request);
-        User savedUser = userRepository.save(entity);
-
-        return userMapper.toResponse(savedUser);
+        userRepository.save(userMapper.fromEvent(event));
     }
 
     @Override

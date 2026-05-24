@@ -1,4 +1,4 @@
-package com.streamhub.userservice.api;
+package com.streamhub.userservice.api.rest;
 
 import com.streamhub.userservice.application.dto.request.UserRequest;
 import com.streamhub.userservice.application.dto.response.UserResponse;
@@ -18,10 +18,7 @@ import java.util.UUID;
 public class UserController {
     private final UserService userService;
 
-    @PostMapping
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
-    }
+   
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable UUID id) {

@@ -1,4 +1,4 @@
-package com.streamhub.userservice.domain.model.base;
+package com.streamhub.common.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;
