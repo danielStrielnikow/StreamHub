@@ -1,0 +1,2 @@
+ALTER TABLE users DROP COLUMN version;
+ALTER TABLE users ADD COLUMN keycloak_id UUID UNIQUE;

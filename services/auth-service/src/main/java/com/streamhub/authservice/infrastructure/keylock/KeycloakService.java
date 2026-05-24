@@ -1,5 +1,6 @@
 package com.streamhub.authservice.infrastructure.keylock;
 
+import com.streamhub.authservice.api.exception.ConflictException;
 import com.streamhub.authservice.dto.reponse.TokenResponse;
 import com.streamhub.authservice.dto.request.RegisterRequest;
 import jakarta.ws.rs.core.Response;
@@ -41,7 +42,11 @@ public class KeycloakService {
         UserRepresentation user = getUserRepresentation(request);
 
         Response response = keycloak.realm(realm).users().create(user);
-        
+
+        if (response.getStatus() == 409) {
+            throw new ConflictException("User already exists with email: " + request.email());
+        }
+
         String userId = CreatedResponseUtil.getCreatedId(response);
 
         RoleRepresentation role = keycloak.realm(realm)
