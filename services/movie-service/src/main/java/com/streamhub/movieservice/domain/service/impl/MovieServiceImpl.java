@@ -2,7 +2,10 @@ package com.streamhub.movieservice.domain.service.impl;
 
 import com.streamhub.movieservice.api.exceptiopn.ResourceNotFoundException;
 import com.streamhub.movieservice.application.dto.request.MovieRequest;
+import com.streamhub.movieservice.application.dto.request.UploadCompleteRequest;
+import com.streamhub.movieservice.application.dto.request.UploadInitRequest;
 import com.streamhub.movieservice.application.dto.response.MovieResponse;
+import com.streamhub.movieservice.application.dto.response.UploadInitResponse;
 import com.streamhub.movieservice.application.mapper.MovieMapper;
 import com.streamhub.movieservice.domain.service.MovieService;
 import com.streamhub.movieservice.infrastructure.minio.MinioService;
@@ -10,6 +13,7 @@ import com.streamhub.movieservice.model.Movie;
 import com.streamhub.movieservice.model.enums.Genre;
 import com.streamhub.movieservice.model.enums.VideoStatus;
 import com.streamhub.movieservice.repository.MovieRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -19,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
@@ -36,6 +41,7 @@ public class MovieServiceImpl implements MovieService {
     @Override
     public MovieResponse createMovie(MovieRequest request) {
         Movie movie = movieMapper.toEntity(request);
+        movie.setVideoStatus(VideoStatus.PENDING);
         return movieMapper.toResponse(movieRepository.save(movie));
     }
 
@@ -166,6 +172,56 @@ public class MovieServiceImpl implements MovieService {
                 .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(chunkSize))
                 .header(HttpHeaders.CONTENT_RANGE, "bytes " + finalStart + "-" + finalEnd + "/" + fileSize)
                 .body(body);
+    }
+
+    @Override
+    public UploadInitResponse initVideoUpload(String id, UploadInitRequest request) {
+        Movie movie = findById(id);
+        movie.setVideoStatus(VideoStatus.PROCESSING);
+        movieRepository.save(movie);
+        String contentType = request.contentType() != null ? request.contentType() : "video/mp4";
+        return minioService.initVideoUpload(id, request.filename(), contentType);
+    }
+
+    @Override
+    public String uploadVideoChunk(String id, String uploadId, int partNumber, HttpServletRequest request) {
+        long size = request.getContentLengthLong();
+        if (size <= 0) throw new IllegalArgumentException("Content-Length header is required");
+        try {
+            InputStream data = request.getInputStream();
+            minioService.uploadChunk(uploadId, partNumber, data, size);
+            return "part " + partNumber + " uploaded";
+        } catch (IOException e) {
+            log.error("Failed to read chunk {} for uploadId {}:", partNumber, uploadId, e);
+            throw new RuntimeException("Failed to read chunk", e);
+        }
+    }
+
+    @Override
+    public MovieResponse completeVideoUpload(String id, UploadCompleteRequest request) {
+        try {
+            String url = minioService.completeVideoUpload(request.uploadId(), request.parts());
+            String objectKey = url.substring(url.indexOf(id));
+            Movie movie = findById(id);
+            movie.setVideoUrl(url);
+            movie.setVideoKey(objectKey);
+            movie.setVideoStatus(VideoStatus.READY);
+            return movieMapper.toResponse(movieRepository.save(movie));
+        } catch (Exception e) {
+            Movie movie = findById(id);
+            movie.setVideoStatus(VideoStatus.FAILED);
+            movieRepository.save(movie);
+            log.error("Failed to complete video upload for movie {}:", id, e);
+            throw new RuntimeException("Failed to complete upload", e);
+        }
+    }
+
+    @Override
+    public void abortVideoUpload(String id, String uploadId) {
+        minioService.abortVideoUpload(uploadId);
+        Movie movie = findById(id);
+        movie.setVideoStatus(VideoStatus.PENDING);
+        movieRepository.save(movie);
     }
 
     private Movie findById(String id) {

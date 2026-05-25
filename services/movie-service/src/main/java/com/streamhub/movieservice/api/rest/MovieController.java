@@ -1,9 +1,13 @@
 package com.streamhub.movieservice.api.rest;
 
 import com.streamhub.movieservice.application.dto.request.MovieRequest;
+import com.streamhub.movieservice.application.dto.request.UploadCompleteRequest;
+import com.streamhub.movieservice.application.dto.request.UploadInitRequest;
 import com.streamhub.movieservice.application.dto.response.MovieResponse;
+import com.streamhub.movieservice.application.dto.response.UploadInitResponse;
 import com.streamhub.movieservice.domain.service.MovieService;
 import com.streamhub.movieservice.model.enums.Genre;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/movies")
@@ -73,5 +78,37 @@ public class MovieController {
     @PostMapping("/{id}/thumbnail")
     public ResponseEntity<MovieResponse> uploadThumbnail(@PathVariable String id, @RequestParam MultipartFile file) {
         return ResponseEntity.ok(movieService.uploadThumbnail(id, file));
+    }
+
+    @PostMapping("/{id}/upload/init")
+    public ResponseEntity<UploadInitResponse> initUpload(
+            @PathVariable String id,
+            @RequestBody UploadInitRequest request) {
+        return ResponseEntity.ok(movieService.initVideoUpload(id, request));
+    }
+
+    @PutMapping("/{id}/upload/part")
+    public ResponseEntity<Map<String, Object>> uploadChunk(
+            @PathVariable String id,
+            @RequestParam String uploadId,
+            @RequestParam int partNumber,
+            HttpServletRequest request) {
+        String result = movieService.uploadVideoChunk(id, uploadId, partNumber, request);
+        return ResponseEntity.ok(Map.of("partNumber", partNumber, "status", result));
+    }
+
+    @PostMapping("/{id}/upload/complete")
+    public ResponseEntity<MovieResponse> completeUpload(
+            @PathVariable String id,
+            @RequestBody UploadCompleteRequest request) {
+        return ResponseEntity.ok(movieService.completeVideoUpload(id, request));
+    }
+
+    @DeleteMapping("/{id}/upload/{uploadId}")
+    public ResponseEntity<Void> abortUpload(
+            @PathVariable String id,
+            @PathVariable String uploadId) {
+        movieService.abortVideoUpload(id, uploadId);
+        return ResponseEntity.noContent().build();
     }
 }
